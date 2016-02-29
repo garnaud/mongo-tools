@@ -25,6 +25,8 @@ func (md *MetadataFile) Open() error {
 func (md *MetadataFile) Close() error {
 	return nil
 }
+func (md *MetadataFile) SetReadBuffer([]byte) {
+}
 
 func (md *MetadataFile) Read(p []byte) (int, error) {
 	n, err := md.Buffer.Read(p)
@@ -381,4 +383,7 @@ func (mpf *MetadataPreludeFile) Read(p []byte) (int, error) {
 
 func (mpf *MetadataPreludeFile) Pos() int64 {
 	return atomic.LoadInt64(&mpf.pos)
+}
+
+func (mpf *MetadataPreludeFile) SetReadBuffer([]byte) {
 }

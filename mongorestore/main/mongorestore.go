@@ -9,6 +9,7 @@ import (
 	"github.com/mongodb/mongo-tools/common/util"
 	"github.com/mongodb/mongo-tools/mongorestore"
 	"os"
+	"runtime/pprof"
 )
 
 func main() {
@@ -75,6 +76,9 @@ func main() {
 		}
 		os.Exit(util.ExitError)
 	}
+	heapProf, err := os.Create(".heap_profile")
+	pprof.WriteHeapProfile(heapProf)
+	heapProf.Close()
 }
 
 // getTargetDirFromArgs handles the logic and error cases of figuring out

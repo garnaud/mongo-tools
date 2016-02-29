@@ -185,14 +185,18 @@ func (demux *Demultiplexer) Open(ns string, out DemuxOut) {
 // RegularCollectionReceiver implements the intents.file interface.
 // RegularCollectionReceivers get paired with RegularCollectionSenders.
 type RegularCollectionReceiver struct {
-	readLenChan      <-chan int
-	readBufChan      chan<- []byte
-	Intent           *intents.Intent
-	Demux            *Demultiplexer
-	partialReadArray [db.MaxBSONSize]byte
-	partialReadBuf   []byte
-	isOpen           bool
-	pos              int64
+	readLenChan    <-chan int
+	readBufChan    chan<- []byte
+	Intent         *intents.Intent
+	Demux          *Demultiplexer
+	ReadBuffer     []byte
+	partialReadBuf []byte
+	isOpen         bool
+	pos            int64
+}
+
+func (receiver *RegularCollectionReceiver) SetReadBuffer(buffer []byte) {
+	receiver.ReadBuffer = buffer
 }
 
 func (receiver *RegularCollectionReceiver) Read(r []byte) (int, error) {
@@ -220,7 +224,7 @@ func (receiver *RegularCollectionReceiver) Read(r []byte) (int, error) {
 	if wLen > rLen {
 		// if the incomming write size is larger then the incomming read buffer then we need to accept
 		// the write in a larger buffer, fill the read buffer, then cache the remainder
-		receiver.partialReadBuf = receiver.partialReadArray[:wLen]
+		receiver.partialReadBuf = receiver.ReadBuffer[:wLen]
 		receiver.readBufChan <- receiver.partialReadBuf
 		writtenLength := <-receiver.readLenChan
 		if wLen != writtenLength {
@@ -337,6 +341,9 @@ func (cache *SpecialCollectionCache) Pos() int64 {
 	return atomic.LoadInt64(&cache.pos)
 }
 
+func (cache *SpecialCollectionCache) SetReadBuffer([]byte) {
+}
+
 // MutedCollection implements both DemuxOut as well as intents.file. It serves as a way to
 // let the demutiplexer ignore certain embedded streams
 type MutedCollection struct {
@@ -363,6 +370,9 @@ func (*MutedCollection) Close() error {
 // Open is part of the intents.file interface, and does nothing
 func (*MutedCollection) Open() error {
 	return nil
+}
+
+func (*MutedCollection) SetReadBuffer([]byte) {
 }
 
 //===== Archive Manager Prioritizer =====

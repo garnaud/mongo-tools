@@ -33,6 +33,7 @@ func (restore *MongoRestore) RestoreIntents() error {
 
 		// start a goroutine for each job thread
 		for i := 0; i < restore.OutputOptions.NumParallelCollections; i++ {
+			readBuffer := make([]byte, db.MaxBSONSize)
 			go func(id int) {
 				log.Logf(log.DebugHigh, "starting restore routine with id=%v", id)
 				for {
@@ -42,6 +43,7 @@ func (restore *MongoRestore) RestoreIntents() error {
 						resultChan <- nil // done
 						return
 					}
+					intent.BSONFile.SetReadBuffer(readBuffer)
 					err := restore.RestoreIntent(intent)
 					if err != nil {
 						resultChan <- fmt.Errorf("%v: %v", intent.Namespace(), err)
@@ -67,6 +69,7 @@ func (restore *MongoRestore) RestoreIntents() error {
 		if intent == nil {
 			return nil
 		}
+		intent.BSONFile.SetReadBuffer(make([]byte, db.MaxBSONSize))
 		err := restore.RestoreIntent(intent)
 		if err != nil {
 			return fmt.Errorf("%v: %v", intent.Namespace(), err)

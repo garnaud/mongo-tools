@@ -117,6 +117,8 @@ func (f *realBSONFile) Open() (err error) {
 	}
 	return nil
 }
+func (f *realBSONFile) SetReadBuffer([]byte) {
+}
 
 // realMetadataFile implements the intents.file interface. It lets intents read from real
 // metadata.json files ok disk via an embedded os.File
@@ -164,6 +166,8 @@ func (f *realMetadataFile) Read(p []byte) (int, error) {
 func (f *realMetadataFile) Pos() int64 {
 	return atomic.LoadInt64(&f.pos)
 }
+func (f *realMetadataFile) SetReadBuffer([]byte) {
+}
 
 // stdinFile implements the intents.file interface. They allow intents to read single collections
 // from standard input
@@ -193,6 +197,8 @@ func (f *stdinFile) Pos() int64 {
 func (f *stdinFile) Close() error {
 	f.Reader = nil
 	return nil
+}
+func (f *stdinFile) SetReadBuffer([]byte) {
 }
 
 // getInfoFromFilename pulls the base collection name and FileType from a given file.
@@ -370,7 +376,7 @@ func (restore *MongoRestore) CreateIntentsForDB(db string, filterCollection stri
 					skip = true
 				}
 
-				// TOOLS-976: skip restoring the collections should be excluded 
+				// TOOLS-976: skip restoring the collections should be excluded
 				if filterCollection == "" && restore.shouldSkipCollection(collection) {
 					log.Logf(log.DebugLow, "skipping restoring %v.%v, it is excluded", db, collection)
 					skip = true
@@ -413,10 +419,10 @@ func (restore *MongoRestore) CreateIntentsForDB(db string, filterCollection stri
 				log.Logf(log.Info, "found collection %v bson to restore", intent.Namespace())
 				restore.manager.Put(intent)
 			case MetadataFileType:
-				// TOOLS-976: skip restoring the collections should be excluded 
+				// TOOLS-976: skip restoring the collections should be excluded
 				if filterCollection == "" && restore.shouldSkipCollection(collection) {
 					log.Logf(log.DebugLow, "skipping restoring %v.%v metadata, it is excluded", db, collection)
-					continue	
+					continue
 				}
 
 				usesMetadataFiles = true
@@ -424,7 +430,7 @@ func (restore *MongoRestore) CreateIntentsForDB(db string, filterCollection stri
 					DB: db,
 					C:  collection,
 				}
-				
+
 				if restore.InputOptions.Archive != "" {
 					if restore.InputOptions.Archive == "-" {
 						intent.MetadataLocation = "archive on stdin"
